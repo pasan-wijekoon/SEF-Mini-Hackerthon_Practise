@@ -21,3 +21,12 @@ export interface Report {
 
 /** Payload for POST /api/reports — server-assigned fields are omitted. */
 export type ReportInput = Omit<Report, '_id' | 'status' | 'createdAt' | 'updatedAt'>;
+
+// Alias for backward compatibility with feature branch
+export type CreateReportInput = ReportInput;
+
+export interface ReportFilters {
+  status?: ReportStatus;
+  category?: string;
+  search?: string;
+}

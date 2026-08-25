@@ -1,3 +1,4 @@
+
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { BrowsePage } from './pages/BrowsePage';
 import './App.css';
@@ -50,3 +51,5 @@ function App() {
 }
 
 export default App;
+export { router } from './router';
+

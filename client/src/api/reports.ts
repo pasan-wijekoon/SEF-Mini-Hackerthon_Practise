@@ -6,6 +6,16 @@ const USE_MOCKS =
   import.meta.env.VITE_USE_MOCKS === 'true' ||
   !import.meta.env.VITE_API_BASE_URL;
 
+/** Thrown for any non-2xx response from the backend. */
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     headers: {
@@ -23,7 +33,7 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
     } catch {
       // ignore
     }
-    throw new Error(errorMessage);
+    throw new ApiError(errorMessage, response.status);
   }
 
   // Handle 204 No Content
@@ -44,7 +54,7 @@ function filterMockReports(filters?: ReportFilters): Report[] {
     const search = filters.search.toLowerCase();
     results = results.filter(
       (r) =>
-        r.title.toLowerCase().includes(search) ||
+        r.itemName.toLowerCase().includes(search) ||
         (r.description && r.description.toLowerCase().includes(search)) ||
         (r.location && r.location.toLowerCase().includes(search))
     );
@@ -78,8 +88,8 @@ export const reportsApi = {
   async getReportById(id: string): Promise<Report> {
     if (USE_MOCKS) {
       await mockDelay();
-      const found = mockReports.find((r) => r.id === id);
-      if (!found) throw new Error(`Report ${id} not found`);
+      const found = mockReports.find((r) => r._id === id);
+      if (!found) throw new ApiError(`Report ${id} not found`, 404);
       return { ...found };
     }
     return fetchJson<Report>(
@@ -91,14 +101,14 @@ export const reportsApi = {
    * Create a new report
    */
   async createReport(
-    report: Omit<Report, 'id' | 'createdAt' | 'updatedAt' | 'status'>
+    report: Omit<Report, '_id' | 'createdAt' | 'updatedAt' | 'status'>
   ): Promise<Report> {
     if (USE_MOCKS) {
       await mockDelay();
       const now = new Date().toISOString();
       const newReport: Report = {
         ...report,
-        id: `mock-${Date.now()}`,
+        _id: `mock-${Date.now()}`,
         status: 'Active',
         createdAt: now,
         updatedAt: now,
@@ -118,8 +128,8 @@ export const reportsApi = {
   async resolveReport(id: string): Promise<Report> {
     if (USE_MOCKS) {
       await mockDelay();
-      const idx = mockReports.findIndex((r) => r.id === id);
-      if (idx === -1) throw new Error(`Report ${id} not found`);
+      const idx = mockReports.findIndex((r) => r._id === id);
+      if (idx === -1) throw new ApiError(`Report ${id} not found`, 404);
       const now = new Date().toISOString();
       const updated: Report = {
         ...mockReports[idx],
@@ -137,3 +147,9 @@ export const reportsApi = {
     );
   },
 };
+
+// Flat named exports — some pages import individual functions instead of
+// the `reportsApi` object; both styles stay in sync since they share the
+// same implementation.
+export const { getReports, getReportById, createReport, resolveReport } =
+  reportsApi;

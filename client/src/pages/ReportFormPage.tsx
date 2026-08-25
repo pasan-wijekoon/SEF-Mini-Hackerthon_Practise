@@ -1,5 +1,6 @@
 import { useState, type FormEvent, type ChangeEvent } from "react";
 import { validateReport, type ReportForm } from "../utils/validation";
+import { createReport, ApiError } from "../api/reports";
 
 const CATEGORIES = [
   "Electronics",
@@ -12,6 +13,12 @@ const CATEGORIES = [
   "Other",
 ];
 
+type SubmitState =
+  | { kind: "idle" }
+  | { kind: "submitting" }
+  | { kind: "success"; itemName: string }
+  | { kind: "error"; message: string };
+
 export default function ReportFormPage() {
   const [form, setForm] = useState<ReportForm>({
     type: "Lost",
@@ -23,7 +30,7 @@ export default function ReportFormPage() {
     contactInfo: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitted, setSubmitted] = useState(false);
+  const [submit, setSubmit] = useState<SubmitState>({ kind: "idle" });
 
   const update =
     (k: keyof ReportForm) =>
@@ -32,13 +39,37 @@ export default function ReportFormPage() {
     ) =>
       setForm({ ...form, [k]: e.target.value });
 
-  const onSubmit = (e: FormEvent) => {
+  const resetForm = () => {
+    setForm({
+      type: "Lost",
+      itemName: "",
+      category: "",
+      location: "",
+      date: "",
+      description: "",
+      contactInfo: "",
+    });
+    setErrors({});
+  };
+
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const errs = validateReport(form);
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
-    console.log("VALID FORM — ready to POST:", form);
-    setSubmitted(true);
+
+    setSubmit({ kind: "submitting" });
+    try {
+      const created = await createReport(form);
+      setSubmit({ kind: "success", itemName: created.itemName });
+      resetForm();
+    } catch (err) {
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : "Could not reach the server. Is the backend running on port 5000?";
+      setSubmit({ kind: "error", message });
+    }
   };
 
   const errStyle = { color: "#c00", fontSize: 13, margin: "4px 0 0" };
@@ -53,6 +84,19 @@ export default function ReportFormPage() {
     border: "1px solid #ccc",
     borderRadius: 4,
   };
+  const banner = (bg: string, color: string, text: string) => (
+    <p
+      style={{
+        background: bg,
+        color,
+        padding: 12,
+        margin: 0,
+        borderRadius: 4,
+      }}
+    >
+      {text}
+    </p>
+  );
 
   return (
     <form
@@ -71,19 +115,10 @@ export default function ReportFormPage() {
     >
       <h1 style={{ margin: 0 }}>Report a Lost or Found Item</h1>
 
-      {submitted && (
-        <p
-          style={{
-            background: "#e6f4ea",
-            color: "#0b6b2a",
-            padding: 12,
-            margin: 0,
-            borderRadius: 4,
-          }}
-        >
-          Form is valid — ready to send to backend.
-        </p>
-      )}
+      {submit.kind === "success" &&
+        banner("#e6f4ea", "#0b6b2a", `Reported "${submit.itemName}" — saved to the database.`)}
+      {submit.kind === "error" &&
+        banner("#fdecea", "#a11", submit.message)}
 
       <label style={labelStyle}>
         Type
@@ -165,17 +200,18 @@ export default function ReportFormPage() {
 
       <button
         type="submit"
+        disabled={submit.kind === "submitting"}
         style={{
           padding: "10px 16px",
           fontSize: 16,
-          cursor: "pointer",
-          background: "#14707b",
+          cursor: submit.kind === "submitting" ? "not-allowed" : "pointer",
+          background: submit.kind === "submitting" ? "#888" : "#14707b",
           color: "white",
           border: "none",
           borderRadius: 4,
         }}
       >
-        Submit Report
+        {submit.kind === "submitting" ? "Submitting..." : "Submit Report"}
       </button>
     </form>
   );

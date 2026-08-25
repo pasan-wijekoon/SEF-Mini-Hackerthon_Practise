@@ -22,6 +22,14 @@ export function Navbar() {
               `${styles.link} ${isActive ? styles.active : ''}`
             }
           >
+            Home
+          </NavLink>
+          <NavLink
+            to="/browse"
+            className={({ isActive }) =>
+              `${styles.link} ${isActive ? styles.active : ''}`
+            }
+          >
             Browse
           </NavLink>
           <NavLink

@@ -1,0 +1,41 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.md {
+  font-size: 0.72rem;
+  padding: 6px 10px;
+}
+
+.sm {
+  font-size: 0.65rem;
+  padding: 4px 8px;
+}
+
+/* Variant: type (Lost / Found) */
+.type.lost {
+  background: var(--lost-bg);
+  color: var(--lost);
+}
+.type.found {
+  background: var(--found-bg);
+  color: var(--found);
+}
+
+/* Variant: status (Active / Resolved) */
+.status.active {
+  background: var(--active-bg);
+  color: var(--active);
+}
+.status.resolved {
+  background: var(--resolved-bg);
+  color: var(--resolved);
+}
